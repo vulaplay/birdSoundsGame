@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<head>
+
+<style>
+    * { box-sizing: border-box; }
+
+.game-container {
+    font: 16px Arial; 
+    
+    text-align: center; 
+    background-color: #39CCCC; 
+    display: block; 
+    
+    height: 500px;
+    border: 2px solid grey;
+    border-radius: 5px;
+}
+
+.autocomplete {
+  /*the container must be positioned relative:*/
+  position: relative;
+  display: inline-block;
+}
+
+input {
+  border: 1px solid lightgrey;
+  background-color: #f1f1f1;
+  padding: 10px;
+  font-size: 16px;
+}
+
+input[type=text] {
+  background-color: #f1f1f1;
+  width: 100%;
+}
+
+.autocomplete-items {
+  position: absolute;
+  border: 1px solid #d4d4d4;
+  border-bottom: none;
+  border-top: none;
+  z-index: 99;
+  /*position the autocomplete items to be the same width as the container:*/
+  top: 100%;
+  left: 0;
+  right: 0;
+}
+.autocomplete-items div {
+  padding: 10px;
+  cursor: pointer;
+  background-color: #fff;
+  border-bottom: 1px solid #d4d4d4;
+}
+.autocomplete-items div:hover {
+  /*when hovering an item:*/
+  background-color: #e9e9e9;
+}
+.autocomplete-active {
+  /*when navigating through the items using the arrow keys:*/
+  background-color: DodgerBlue !important;
+  color: #ffffff;
+}
+.loader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+  display: inline-block;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.game-input-btn {
+  padding: 4px 20px;
+  font-size: 24px;
+  text-align: center;
+  cursor: pointer;
+  outline: black;
+  color: #fff;
+  background-color: DodgerBlue;
+  border: black;
+  border-radius: 10px;
+  box-shadow: 0 5px #999;
+}
+
+.game-input-btn:hover {background-color: rgb(110, 183, 255)}
+
+.game-input-btn:active {
+  background-color: DodgerBlue;
+  box-shadow: 0 2px #666;
+  transform: translateY(3px);
+}
+
+</style>
+	
+</head>
+
+
+
+<body >
+    <!--levels are based on the commonality of the birds, not neccesarilty the commonality of the sounds. A bird you hear in one level will not appear in another level. There are 10 sounds at each level. Get all correct to progress to the next level-->
+    <div>
+    
+    <div class='game-container'>
+        <!--scoreboard-->
+        <div class='scores-div' style="display: none;">
+            <h1 class='level'>Level: 1.1</h1>
+        </div>
+        <!--game screen-->
+        <div class='game-div' style="display: none;">
+            <section class="game">
+                <audio controls controlsList="nodownload" class="modal-content" id='aud' style="width:100%; max-width:600px;">
+                        <source src="https://www.xeno-canto.org/493159/download" id="audsrc" type="audio/mp3"> 
+                </audio>
+                <p class='sound-num'></p>    
+                <form class='answerForm' autocomplete="off" style="padding-top: 30px;">
+                    <p>Search for a species and click Submit</p>
+                    <p id='valMessage' style="display: none; color: red;">Invalid species</p>
+                    <div class="autocomplete" style="width:300px;">
+                        <input  id="userAnswer" type="text" name="userAnswer" placeholder="Birds"></input>
+                    </div>
+                    <input class="game-input-btn" type="submit"></input>
+                </form> 
+                <br>
+        </div>
+        <!--answer screen-->
+        <div class='answer-div' style="display: none;">
+            <h2 id='ans-result'></h2>
+            <p id='ans-summ'></p>
+            <input class="game-input-btn" id='nextBtn' type="submit" value='Next Bird Sound >>'></input>
+        </div>
+        <!--start screen-->
+        <div class='start-div' style="display: none;">
+            <h1 class="start-txt">Welcome to the Bird Sounds Game. </h1>
+            <div class="intro-text">
+            <h3 >This game...</h3>
+            <h2>Click start to begin.</h2>
+            </div>  
+            <h1 class='next-level-txt' style="display: none;"></h1>
+            <input class="game-input-btn" id='startBtn' type="submit" value='Start'></input>
+        </div>
+        <!--loading screen-->
+        <div class='load-div' style="display: none;">
+                <h1>Getting sounds...</h1>
+                <div class="loader"></div>
+        </div>
+        <!--game over screen-->
+        <div class='gameover-div' style="display: none;"> 
+            <h1 class='gameover-msg'></h1>
+            <input class="game-input-btn" id='gameOverBtn' type="submit" value='Restart Game'></input>    
+        </div>             
+    </div>
+</div>
+	<script src='https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js'/></script>
+    <script src='./Gamebirddata.js'></script>
+    <script src=''></script>
+
+    <script>
+        //<![CDATA[       
+        $(function() {
+
+
+            /*TODO
+            - re-skin
+            - multiple choice option, easy/hard
+            - mix up some levels
+            - error when call ws
+            - when also birds not in birdlist
+            */
+                     
+            let $answerForm = $('.answerForm');
+            let $gameDiv = $('.game-div');
+            let $soundNum = $('.sound-num');
+            let $startDiv = $('.start-div');
+            let $answerDiv = $('.answer-div');
+            let $scoresDiv = $('.scores-div');
+            let $startBtn = $('#startBtn');
+            let $nextBtn = $('#nextBtn');
+            let $userAnswerEle = $('#userAnswer');
+            let $valMessage = $('#valMessage');
+            let $audioSrc = $('#audsrc');
+            let $audTag = $('#aud');
+            let $loadDiv = $('.load-div');
+            let $ansText = $('#ans-result');
+            let $ansSumm = $('#ans-summ');
+            let $score = $('.score');
+            let $level = $('.level');
+            let $startTxt = $('.start-txt');
+            let $nextLevelTxt = $('.next-level-txt');
+            let $gameOverDiv = $('.gameover-div');
+            let $gameOverTxt = $('.gameover-text');
+            let $gameOverMsg = $('.gameover-msg');
+            let $gameOverBtn = $('#gameOverBtn');
+            let $introTxt = $('.intro-text');
+            let levelBirds;
+            let levelBirdSounds;
+            let score = 1;
+            let currentLevel = 1;
+            const soundsAtEachLevel = 2;
+            const numberOfLevels = 5;
+            let currentSoundObj = {};
+            let currentAnswer;
+            let userAnswer;
+            let questionedThisLevel = [];
+            const levelPassPerecentage = 0.7;
+            let rand;
+            let XenoCanto = 'https://www.xeno-canto.org/';
+            let finalScore;
+
+            const birdSpecies = (commonName,sciName, sounds = {}) =>{
+                return{
+                    commonName,
+                    sciName,
+                    sounds,
+                    getSound(soundType){
+                        
+                        if(!soundType){
+                            //to do get sounds type
+                        }
+                        
+                        return this.sounds[Math.floor(Math.random() * this.sounds.length)];
+
+                    }
+                }
+            };
+            
+            const addOneScore = () => {
+                score++;
+                $level.html(`Level: ${currentLevel}.${score}`)
+            };
+
+            const addOneLevel = () => {
+                currentLevel++;
+                $level.html(`Level: ${currentLevel}.${score}`)
+            };
+
+            const restartGame = () =>{
+                location.reload();
+            };
+
+            const gameOver = (maxLevel) =>{
+                
+                $answerForm.hide();
+                $gameOverDiv.show();
+                finalScore = `<mark>${currentLevel}.${score}</mark>`
+
+
+                switch (maxLevel + ((score / currentLevel) >= (soundsAtEachLevel * 0.8))) {
+
+                    case 2:
+                        $gameOverMsg.html(`You got to Level ${finalScore} and completed the game! Well Done.` );
+                        return;    
+                    case 1:
+                        $gameOverMsg.html(`Game Over. You got to Level ${finalScore} and nearly completed the game. Try again and acheive ${levelPassPerecentage * 100}% to complete the level.` );
+                        return;    
+                    case 0:
+                        if (score === 0 && currentLevel === 1){
+                            $gameOverMsg.html(`Game Over. Unlucky, you didn't get any correct. Try again and achieve at least ${levelPassPerecentage * 100}% to complete the first level.` );
+                        } else {
+                            $gameOverMsg.html(`Game Over. You got to Level ${finalScore}. Try again and achieve at least ${levelPassPerecentage * 100}% to complete the level.` );
+                        };
+                        return;
+                };
+
+
+            };
+
+            $gameOverBtn.on('click',function(){
+                restartGame();
+            });
+
+            const levelCheck = () => {
+
+                $ansText.html($ansText.text().replace(' Try the next one.',''));
+                
+                $introTxt.hide();
+                console.log($introTxt.children())
+                $introTxt.children().hide();
+
+                if (currentLevel === numberOfLevels) {
+                    gameOver(true);
+                    return;
+                };
+                
+                if (score >= (soundsAtEachLevel * 0.8)){
+                    addOneLevel();
+
+                    $startTxt.html(`Well done! You passed Level ${currentLevel-1}. Click Start to begin Level ${currentLevel}.`);
+                    
+                    $startDiv.show();
+                    
+                    questionedThisLevel = [];
+                } else {
+                    gameOver(false);
+                };
+                
+                score = 0;
+                $level.html(`Level: ${currentLevel}.${score}`);
+            };
+
+
+            //show start screen
+            $startDiv.show();
+            
+            //add answer submission handler to answer submit button
+            $answerForm.on("submit",function(e) {
+                
+                e.preventDefault(); // cancel the actual submit
+
+                //get the users answer
+                userAnswer = $userAnswerEle.val();
+                //validation
+
+                if(gamebirdDataArr[0].indexOf(userAnswer) < 0){
+                    $valMessage.show()
+                    return;
+                };
+
+                $valMessage.hide(); //hide the validation if it was visible
+                
+                //stop the recording on submit
+                document.getElementById("aud").pause();
+                $audioSrc.prop('src','');
+                
+                //show a summery of the answer with link to xeno record
+                $ansSumm.html(`You can listen again above or click <a href="${XenoCanto}${currentSoundObj.id}" target="_blank">here</a> to go to Xeno-Canto for more information about this recording (opens in new tab).`);
+                
+                //evaluate user respone
+                if (userAnswer === currentAnswer){
+                    addOneScore();
+                    //if last level 
+                    if (questionedThisLevel.length === soundsAtEachLevel){
+                        $answerForm.hide();
+                        $answerDiv.show();
+                        $nextBtn.hide();
+                                               
+                        $ansText.html( `Correct! That was a ${currentAnswer} (${currentSoundObj.type}).`);
+                        levelCheck();
+                        return;
+                    }
+                    $ansText.html(`Correct! That was a ${currentAnswer} (${currentSoundObj.type}).`);
+                    
+                } else {
+                    //if last level
+                    if (questionedThisLevel.length === soundsAtEachLevel){
+                        $answerForm.hide();
+                        $answerDiv.show();
+                        $nextBtn.hide();
+                        $ansText.html(`Incorrect! That was a ${currentAnswer} (${currentSoundObj.type}). Try the next one.`);
+                        levelCheck()
+                        return;
+                    }
+                    $ansText.html(`Incorrect! That was a ${currentAnswer} (${currentSoundObj.type}). Try the next one.`);
+                };
+                
+                $answerForm.hide();
+                $answerDiv.show();
+
+            });
+            
+            //add start game handler to start button
+            $startBtn.click(function() {
+                //get first level
+                getBirdSounds(currentLevel);
+
+                $gameDiv.hide();
+                $answerDiv.hide();
+                $answerForm.show();
+                $startDiv.hide();
+                $loadDiv.show();
+                $scoresDiv.show();
+                $nextBtn.show();
+                
+            });
+
+            $nextBtn.click(function(){
+                //get next sound that hasn't been asked this level already       
+                $('.otherBirdsp').remove();
+                setSound(questionedThisLevel.length);
+                $answerDiv.hide();
+                $answerForm.show();
+                $userAnswerEle.val('');
+                document.getElementById("aud").play();
+            });
+
+            const getAlsoBirds = (soundObj)=>{
+                let alsoBirds = '';
+                soundObj.also.forEach(also =>{
+                    alsoBirds = alsoBirds + gamebirdDataArr[0][gamebirdDataArr[1].indexOf(also)] + ', '
+                    console.log(gamebirdDataArr[0][gamebirdDataArr[1].indexOf(also)]);
+                })
+                console.log(alsoBirds)
+                return alsoBirds.substring(0,alsoBirds.length-2)
+            };
+
+            const setSound = (ansNum) =>{
+
+                currentAnswer = levelBirdSounds[ansNum].commonName;
+                currentSoundObj = levelBirdSounds[ansNum].getSound();
+                questionedThisLevel.push(levelBirdSounds[ansNum]);
+                console.log(questionedThisLevel.length)
+                $audioSrc.prop('src', 'https:' + currentSoundObj.file);
+                $soundNum.html(`Sound ${questionedThisLevel.length} of ${soundsAtEachLevel}`);
+                document.getElementById("aud").load();
+                console.log(currentSoundObj);
+                console.log(currentSoundObj.also);
+                console.log(!currentSoundObj.also[0] == "")
+                if (!currentSoundObj.also[0] == ""){
+                    $(`<p class='otherBirdsp'><b>Background birds: ${getAlsoBirds(currentSoundObj)}</b></P>`).insertAfter($audTag);
+                };
+                
+            };
+
+            const getBirdSounds = (level) => {
+                
+
+                levelBirds = [[],[]];
+                levelBirdSounds = {};                
+                gamebirdDataArr[0].forEach((bird, index) => {
+                    if (gamebirdDataArr[2][index] === level){
+                        levelBirds[0].push(gamebirdDataArr[0][index]);
+                        levelBirds[1].push(gamebirdDataArr[1][index]);
+                    };
+                });
+                    
+                //get 10 random unique numbers
+                c = 0;
+                let number = [];
+                let candidate;
+                do {
+                    candidate = Math.floor(Math.random() * levelBirds[0].length);
+                    if (number.indexOf(candidate) < 0){
+                        number.push(candidate);
+                        c++
+                    }
+                } while (c < soundsAtEachLevel);
+                
+                //get birds sounds
+                for (let i = 0; i < soundsAtEachLevel; i++) {
+
+                    levelBirdSounds[i] = birdSpecies(levelBirds[0][number[i]],levelBirds[1][number[i]]);
+                    $.get('https://cors-anywhere.herokuapp.com/https://www.xeno-canto.org/api/2/recordings?query=' + levelBirds[1][number[i]] + '+q:A', function(data, status){
+                        
+                    }).done(function(data){
+                        
+                        levelBirdSounds[i].sounds = data.recordings;
+                        if (!i){
+                            setSound(i);
+                            /* remove inner code if no bugs with setting sound
+                            currentAnswer = levelBirdSounds[i].commonName;
+                            currentSoundObj = levelBirdSounds[i].getSound();
+                            questionedThisLevel.push(levelBirdSounds[i]);
+                            $audioSrc.prop('src', 'https:' + currentSoundObj.file);
+                            $soundNum.html(`Sound ${questionedThisLevel.length} of ${soundsAtEachLevel}`);
+                            document.getElementById("aud").load();
+                            */
+                            $loadDiv.hide();
+                            $gameDiv.show();
+                            $userAnswerEle.val('');
+                            document.getElementById("aud").play();
+                        }
+                        
+                    });
+                };
+
+                //console.log(levelBirdSounds[0].sounds[0].file);
+                //console.log(levelBirdSounds[0].getSound());
+                //get list of birds at level in array
+                //fetch bird sounds from api
+                //return arr of sounds + other data for level
+            };
+            
+            let testObj = {
+                id: 1,
+                gen: 'b',
+                also: ["a"]
+            };
+            
+
+            
+
+
+
+            
+        });
+
+        //autocomplete dropdown from w3schools
+
+        function autocomplete(inp, arr) {
+            /*the autocomplete function takes two arguments,
+            the text field element and an array of possible autocompleted values:*/
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+            inp.addEventListener("input", function(e) {
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false;}
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+                    /*check if the item starts with the same letters as the text field value:*/
+                    if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+                    /*create a DIV element for each matching element:*/
+                    b = document.createElement("DIV");
+                    /*make the matching letters bold:*/
+                    b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+                    b.innerHTML += arr[i].substr(val.length);
+                    /*insert a input field that will hold the current array item's value:*/
+                    b.innerHTML += "<input type='hidden' value='" + arr[i].replace(/'/g, "&#39;") + "'>";
+                    /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", function(e) {
+                        /*insert the value for the autocomplete text field:*/
+                        inp.value = this.getElementsByTagName("input")[0].value;
+                       
+                        /*close the list of autocompleted values,
+                        (or any other open lists of autocompleted values:*/
+                        closeAllLists();
+                    });
+                    a.appendChild(b);
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function(e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                    /*and simulate a click on the "active" item:*/
+                    if (x) x[currentFocus].click();
+                    }
+                }
+            });
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                if (elmnt != x[i] && elmnt != inp) {
+                x[i].parentNode.removeChild(x[i]);
+                }
+            }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+            }
+            
+            $(document).ready(function(){
+                autocomplete(document.getElementById("userAnswer"), gamebirdDataArr[0]);
+            });
+         //]]>
+    </script>
+
+<script>
