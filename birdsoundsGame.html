@@ -6,12 +6,11 @@
 
 .game-container {
     font: 16px Arial; 
-    
+    width: 600px;
     text-align: center; 
     background-color: #39CCCC; 
     display: block; 
-    
-    height: 500px;
+    height: 600px;
     border: 2px solid grey;
     border-radius: 5px;
 }
@@ -103,6 +102,12 @@ input[type=text] {
   transform: translateY(3px);
 }
 
+p {
+    word-wrap: normal;
+    padding-left: 15px;
+  padding-right: 15px;
+}
+
 </style>
 	
 </head>
@@ -115,8 +120,13 @@ input[type=text] {
     
     <div class='game-container'>
         <!--scoreboard-->
+        <div class="title-div" style="display: none;">
+            <h2>Bird Sounds Game</h2>
+        </div>
         <div class='scores-div' style="display: none;">
-            <h1 class='level'>Level: 1.1</h1>
+            <h1 class='score'>Score: 0</h1>
+            <h2 class='level'>Level: 1</h2>
+            
         </div>
         <!--game screen-->
         <div class='game-div' style="display: none;">
@@ -124,8 +134,8 @@ input[type=text] {
                 <audio controls controlsList="nodownload" class="modal-content" id='aud' style="width:100%; max-width:600px;">
                         <source src="https://www.xeno-canto.org/493159/download" id="audsrc" type="audio/mp3"> 
                 </audio>
-                <p class='sound-num'></p>    
-                <form class='answerForm' autocomplete="off" style="padding-top: 30px;">
+                <p class='sound-num'style="font-size: small;"></p>
+                <form class='answerForm' autocomplete="off" style="padding-top: 10px;">
                     <p>Search for a species and click Submit</p>
                     <p id='valMessage' style="display: none; color: red;">Invalid species</p>
                     <div class="autocomplete" style="width:300px;">
@@ -145,11 +155,12 @@ input[type=text] {
         <div class='start-div' style="display: none;">
             <h1 class="start-txt">Welcome to the Bird Sounds Game. </h1>
             <div class="intro-text">
-            <h3 >This game...</h3>
+            <p class="instr" style="text-align: justify;"><b>This game gets bird sounds from <a href='https://www.xeno-canto.org/' target="_blank">Xeno-Canto</a> and asks you to guess the bird. Only birds on The British List are used. Sounds for each species are picked at random. Levels are set based on the abundance of the bird in the UK rather than how often the sound is heard. The are 5 levels. The higher the level the greater the points. Enjoy!</b></p>
             <h2>Click start to begin.</h2>
             </div>  
             <h1 class='next-level-txt' style="display: none;"></h1>
             <input class="game-input-btn" id='startBtn' type="submit" value='Start'></input>
+            <p class="disc" style="font-size: small; text-align: justify;"><i>Disclaimer: I built this game for educational purposes and a bit of fun. I make no commercial gain. After each question a link to the original record on Xeno-Canto is provided where you will find the name of the recordist and furher details about the recording. I code for a bit of fun. The source code for this project can be found <a href="https://github.com/vulaplay/birdSoundsGame" target="_blank">here</a>. Please feel free to use, adapt, or improve it.</i></p>
         </div>
         <!--loading screen-->
         <div class='load-div' style="display: none;">
@@ -178,8 +189,11 @@ input[type=text] {
             - mix up some levels
             - error when call ws
             - when also birds not in birdlist
+            - handle not sounds available returning for the bird
+            - try to use UK, if not use euro then world
             */
                      
+            let $titleDiv = $('.title-div');
             let $answerForm = $('.answerForm');
             let $gameDiv = $('.game-div');
             let $soundNum = $('.sound-num');
@@ -204,12 +218,16 @@ input[type=text] {
             let $gameOverMsg = $('.gameover-msg');
             let $gameOverBtn = $('#gameOverBtn');
             let $introTxt = $('.intro-text');
+            let $instructions = $('.instr');
+            let $disclaimer = $('.disc');
             let levelBirds;
             let levelBirdSounds;
-            let score = 1;
-            let currentLevel = 1;
-            const soundsAtEachLevel = 2;
-            const numberOfLevels = 5;
+            let score = 0;
+            let currentLevel = 0;
+            const soundsAtEachLevel = 3;
+            const numberOfLevels = 2;
+            const pointsArr = [1,5,10,50,100];
+            let correctAnswers = 0;
             let currentSoundObj = {};
             let currentAnswer;
             let userAnswer;
@@ -218,6 +236,7 @@ input[type=text] {
             let rand;
             let XenoCanto = 'https://www.xeno-canto.org/';
             let finalScore;
+            let otherBirdsTxt;
 
             const birdSpecies = (commonName,sciName, sounds = {}) =>{
                 return{
@@ -237,13 +256,14 @@ input[type=text] {
             };
             
             const addOneScore = () => {
-                score++;
-                $level.html(`Level: ${currentLevel}.${score}`)
+                score = score + pointsArr[currentLevel - 1];
+                $score.html(`Score: ${score}`)
             };
 
             const addOneLevel = () => {
                 currentLevel++;
-                $level.html(`Level: ${currentLevel}.${score}`)
+                $level.html(`Level: ${currentLevel}`);
+
             };
 
             const restartGame = () =>{
@@ -256,24 +276,22 @@ input[type=text] {
                 $gameOverDiv.show();
                 finalScore = `<mark>${currentLevel}.${score}</mark>`
 
-
-                switch (maxLevel + ((score / currentLevel) >= (soundsAtEachLevel * 0.8))) {
+                switch (maxLevel + ((correctAnswers / currentLevel) >= (soundsAtEachLevel * levelPassPerecentage))) {
 
                     case 2:
-                        $gameOverMsg.html(`You got to Level ${finalScore} and completed the game! Well Done.` );
+                        $gameOverMsg.html(`You got to Level ${currentLevel} and scored ${score} points, and completed the game! Well Done.` );
                         return;    
                     case 1:
-                        $gameOverMsg.html(`Game Over. You got to Level ${finalScore} and nearly completed the game. Try again and acheive ${levelPassPerecentage * 100}% to complete the level.` );
+                        $gameOverMsg.html(`Game Over. You got to Level ${currentLevel} and scored ${score} points, and nearly completed the game. Try again and acheive ${levelPassPerecentage * 100}% to complete the level.` );
                         return;    
                     case 0:
                         if (score === 0 && currentLevel === 1){
                             $gameOverMsg.html(`Game Over. Unlucky, you didn't get any correct. Try again and achieve at least ${levelPassPerecentage * 100}% to complete the first level.` );
                         } else {
-                            $gameOverMsg.html(`Game Over. You got to Level ${finalScore}. Try again and achieve at least ${levelPassPerecentage * 100}% to complete the level.` );
+                            $gameOverMsg.html(`Game Over. You got to Level ${currentLevel} and scored ${score} ${score = 1 ? 'point' : 'points'}. Try again and achieve at least ${levelPassPerecentage * 100}% to complete the level.` );
                         };
                         return;
                 };
-
 
             };
 
@@ -286,7 +304,6 @@ input[type=text] {
                 $ansText.html($ansText.text().replace(' Try the next one.',''));
                 
                 $introTxt.hide();
-                console.log($introTxt.children())
                 $introTxt.children().hide();
 
                 if (currentLevel === numberOfLevels) {
@@ -294,11 +311,10 @@ input[type=text] {
                     return;
                 };
                 
-                if (score >= (soundsAtEachLevel * 0.8)){
-                    addOneLevel();
+                if ((correctAnswers / currentLevel) >= (soundsAtEachLevel * levelPassPerecentage)){
 
-                    $startTxt.html(`Well done! You passed Level ${currentLevel-1}. Click Start to begin Level ${currentLevel}.`);
-                    
+                    $startTxt.html(`Well done! You passed Level ${currentLevel}. Click Start to begin Level ${currentLevel + 1}.`);
+                    $startBtn.prop('value', `Start Level ${currentLevel + 1}`);
                     $startDiv.show();
                     
                     questionedThisLevel = [];
@@ -306,12 +322,11 @@ input[type=text] {
                     gameOver(false);
                 };
                 
-                score = 0;
-                $level.html(`Level: ${currentLevel}.${score}`);
             };
 
 
             //show start screen
+            $titleDiv.show();
             $startDiv.show();
             
             //add answer submission handler to answer submit button
@@ -339,6 +354,7 @@ input[type=text] {
                 
                 //evaluate user respone
                 if (userAnswer === currentAnswer){
+                    correctAnswers++;
                     addOneScore();
                     //if last level 
                     if (questionedThisLevel.length === soundsAtEachLevel){
@@ -373,15 +389,17 @@ input[type=text] {
             //add start game handler to start button
             $startBtn.click(function() {
                 //get first level
-                getBirdSounds(currentLevel);
-
+                getBirdSounds(currentLevel + 1);
+                $('.otherBirdsp').remove();
                 $gameDiv.hide();
                 $answerDiv.hide();
                 $answerForm.show();
                 $startDiv.hide();
                 $loadDiv.show();
-                $scoresDiv.show();
                 $nextBtn.show();
+                addOneLevel();
+                $instructions.remove();
+                $disclaimer.remove();
                 
             });
 
@@ -394,35 +412,38 @@ input[type=text] {
                 $userAnswerEle.val('');
                 document.getElementById("aud").play();
             });
-
+            
+            //
             const getAlsoBirds = (soundObj)=>{
                 let alsoBirds = '';
                 soundObj.also.forEach(also =>{
-                    alsoBirds = alsoBirds + gamebirdDataArr[0][gamebirdDataArr[1].indexOf(also)] + ', '
-                    console.log(gamebirdDataArr[0][gamebirdDataArr[1].indexOf(also)]);
+                    alsoBirds = alsoBirds + gamebirdDataArr[0][gamebirdDataArr[1].indexOf(also)] + ', ';
                 })
-                console.log(alsoBirds)
                 return alsoBirds.substring(0,alsoBirds.length-2)
             };
-
+            
+            //
             const setSound = (ansNum) =>{
 
                 currentAnswer = levelBirdSounds[ansNum].commonName;
                 currentSoundObj = levelBirdSounds[ansNum].getSound();
                 questionedThisLevel.push(levelBirdSounds[ansNum]);
-                console.log(questionedThisLevel.length)
+
                 $audioSrc.prop('src', 'https:' + currentSoundObj.file);
                 $soundNum.html(`Sound ${questionedThisLevel.length} of ${soundsAtEachLevel}`);
                 document.getElementById("aud").load();
-                console.log(currentSoundObj);
-                console.log(currentSoundObj.also);
-                console.log(!currentSoundObj.also[0] == "")
+                //console.log(currentSoundObj);
+                //console.log(currentSoundObj.also);
+                otherBirdsTxt = ''
                 if (!currentSoundObj.also[0] == ""){
-                    $(`<p class='otherBirdsp'><b>Background birds: ${getAlsoBirds(currentSoundObj)}</b></P>`).insertAfter($audTag);
+                    otherBirdsTxt = `. Background birds: ${getAlsoBirds(currentSoundObj)}`
+                    //$(`<p class='otherBirdsp'><b>Background birds: ${getAlsoBirds(currentSoundObj)}</b></P>`).insertAfter($audTag);
                 };
+                $(`<p class='otherBirdsp'><b>Country: ${currentSoundObj.cnt}${otherBirdsTxt}</P>`).insertAfter($soundNum);
                 
             };
-
+            
+            //
             const getBirdSounds = (level) => {
                 
 
@@ -447,6 +468,17 @@ input[type=text] {
                     }
                 } while (c < soundsAtEachLevel);
                 
+                const filterCnt = (birdObj) => {
+                    let cntCount = 0;
+                    //console.log(birdObj.sounds);
+                    birdObj.sounds.forEach(bsounds =>{
+                        if (bsounds.cnt === 'United Kingdom'){
+                            cntCount++;
+                        };
+                    })
+                    return cntCount;
+                };   
+
                 //get birds sounds
                 for (let i = 0; i < soundsAtEachLevel; i++) {
 
@@ -456,43 +488,37 @@ input[type=text] {
                     }).done(function(data){
                         
                         levelBirdSounds[i].sounds = data.recordings;
+                        //console.log(JSON.parse(JSON.stringify(filterCnt(levelBirdSounds[i]))))
                         if (!i){
                             setSound(i);
-                            /* remove inner code if no bugs with setting sound
-                            currentAnswer = levelBirdSounds[i].commonName;
-                            currentSoundObj = levelBirdSounds[i].getSound();
-                            questionedThisLevel.push(levelBirdSounds[i]);
-                            $audioSrc.prop('src', 'https:' + currentSoundObj.file);
-                            $soundNum.html(`Sound ${questionedThisLevel.length} of ${soundsAtEachLevel}`);
-                            document.getElementById("aud").load();
-                            */
+                            document.getElementById("aud").play();
                             $loadDiv.hide();
                             $gameDiv.show();
+                            $scoresDiv.show();
                             $userAnswerEle.val('');
-                            document.getElementById("aud").play();
+                            
                         }
                         
                     });
                 };
-
-                //console.log(levelBirdSounds[0].sounds[0].file);
-                //console.log(levelBirdSounds[0].getSound());
-                //get list of birds at level in array
-                //fetch bird sounds from api
-                //return arr of sounds + other data for level
             };
+
+            const testObj = {
+                a: 1,
+                b: 2,
+                sounds: [{cnt: 'United Kingdom'},{cnt: 'United Kingdom'},{cnt: 'bla'}]
+            }
             
-            let testObj = {
-                id: 1,
-                gen: 'b',
-                also: ["a"]
-            };
-            
-
-            
-
-
-
+            const filterCnt = (birdObj) => {
+                let cntCount = 0;
+                birdObj.sounds.forEach(bsounds =>{
+                if (bsounds.cnt === 'United Kingdom'){
+                    cntCount++;
+                };
+                })
+                return cntCount;
+            }
+            console.log(filterCnt(testObj));
             
         });
 
