@@ -1,24 +1,34 @@
 <!DOCTYPE html>
 <head>
-
+        <meta content='width=device-width, initial-scale=1' name='viewport' />
+        
+        <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+        <!-- Chrome, Firefox OS and Opera -->
+        <meta content='#ffffff' name='theme-color' />
+        <!-- Windows Phone -->
+        <meta content='#ffffff' name='msapplication-navbutton-color' />
+        <meta content='blogger' name='generator' />
 <style>
-    * { box-sizing: border-box; }
+    
 
 .game-container {
-    font: 16px Arial; 
-    width: 600px;
+    font-family: Arial; 
+    
     text-align: center; 
-    background-color: #39CCCC; 
+    background-color: #1bd1ef14; 
     display: block; 
-    height: 600px;
+    outline: 0;
     border: 2px solid grey;
     border-radius: 5px;
+    margin: 50px;
+    
 }
 
 .autocomplete {
   /*the container must be positioned relative:*/
   position: relative;
   display: inline-block;
+  margin-bottom: 10;
 }
 
 input {
@@ -31,6 +41,10 @@ input {
 input[type=text] {
   background-color: #f1f1f1;
   width: 100%;
+}
+
+input[type="button"], input[type="reset"], input[type="submit"] {
+    -webkit-appearance: button;
 }
 
 .autocomplete-items {
@@ -82,7 +96,7 @@ input[type=text] {
 }
 
 .game-input-btn {
-  padding: 4px 20px;
+  /*padding: 4px 20px;*/
   font-size: 24px;
   text-align: center;
   cursor: pointer;
@@ -92,6 +106,7 @@ input[type=text] {
   border: black;
   border-radius: 10px;
   box-shadow: 0 5px #999;
+  margin-bottom: 20px;
 }
 
 .game-input-btn:hover {background-color: rgb(110, 183, 255)}
@@ -108,6 +123,11 @@ p {
   padding-right: 15px;
 }
 
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 400;
+}
+
+
 </style>
 	
 </head>
@@ -116,64 +136,64 @@ p {
 
 <body >
     <!--levels are based on the commonality of the birds, not neccesarilty the commonality of the sounds. A bird you hear in one level will not appear in another level. There are 10 sounds at each level. Get all correct to progress to the next level-->
-    <div>
     
-    <div class='game-container'>
-        <!--scoreboard-->
-        <div class="title-div" style="display: none;">
-            <h2>Bird Sounds Game</h2>
+    <main>
+        <div class='game-container'>
+            <!--scoreboard-->
+            <div class="title-div" style="display: none;">
+                <h2>Bird Sounds Game</h2>
+            </div>
+            <div class='scores-div' style="display: none;">
+                <h1 class='score'>Score: 0</h1>
+                <h2 class='level'>Level: 1</h2>
+                
+            </div>
+            <!--game screen-->
+            <div class='game-div' style="display: none;">
+                <section class="game">
+                    <audio controls controlsList="nodownload" class="modal-content" id='aud' style="width:100%; max-width:600px;">
+                            <source src="https://www.xeno-canto.org/493159/download" id="audsrc" type="audio/mp3"> 
+                    </audio>
+                    <p class='sound-num'style="font-size: small;"></p>
+                    <form class='answerForm' autocomplete="off" style="padding-top: 10px;">
+                        <p>Search for a species and click Submit</p>
+                        <p id='valMessage' style="display: none; color: red;">Invalid species</p>
+                        <div class="autocomplete" style="width:300px;">
+                            <input  id="userAnswer" type="text" name="userAnswer" placeholder="Birds"></input>
+                        </div>
+                        <input class="game-input-btn" type="submit"></input>
+                    </form> 
+                    <br>
+            </div>
+            <!--answer screen-->
+            <div class='answer-div' style="display: none;">
+                <h2 id='ans-result'></h2>
+                <p id='ans-summ'></p>
+                <input class="game-input-btn" id='nextBtn' type="submit" value='Next Bird Sound >>'></input>
+            </div>
+            <!--start screen-->
+            <div class='start-div' style="display: none;">
+                <h1 class="start-txt">Welcome to the Bird Sounds Game. </h1>
+                <div class="intro-text">
+                <p class="instr" style="text-align: justify;"><b>This game gets bird sounds from <a href='https://www.xeno-canto.org/' target="_blank">Xeno-Canto</a> and asks you to guess the bird. Only birds on The British List are used. Sounds for each species are picked at random. Levels are set based on the abundance of the bird in the UK rather than how often the sound is heard. The are 5 levels. The higher the level the greater the points. Enjoy!</b></p>
+                <h2>Click start to begin.</h2>
+                </div>  
+                <h1 class='next-level-txt' style="display: none;"></h1>
+                <input class="game-input-btn" id='startBtn' type="submit" value='Start'></input>
+                <p class="disc" style="font-size: small; text-align: justify;"><i>Disclaimer: I built this game for educational purposes and a bit of fun. I make no commercial gain. After each question a link to the original record on Xeno-Canto is provided where you will find the name of the recordist and furher details about the recording. I code for a bit of fun. The source code for this project can be found <a href="https://github.com/vulaplay/birdSoundsGame" target="_blank">here</a>. Please feel free to use, adapt, or improve it.</i></p>
+            </div>
+            <!--loading screen-->
+            <div class='load-div' style="display: none;">
+                    <h1>Getting sounds...</h1>
+                    <div class="loader"></div>
+            </div>
+            <!--game over screen-->
+            <div class='gameover-div' style="display: none;"> 
+                <h1 class='gameover-msg'></h1>
+                <input class="game-input-btn" id='gameOverBtn' type="submit" value='Restart Game'></input>    
+            </div>             
         </div>
-        <div class='scores-div' style="display: none;">
-            <h1 class='score'>Score: 0</h1>
-            <h2 class='level'>Level: 1</h2>
-            
-        </div>
-        <!--game screen-->
-        <div class='game-div' style="display: none;">
-            <section class="game">
-                <audio controls controlsList="nodownload" class="modal-content" id='aud' style="width:100%; max-width:600px;">
-                        <source src="https://www.xeno-canto.org/493159/download" id="audsrc" type="audio/mp3"> 
-                </audio>
-                <p class='sound-num'style="font-size: small;"></p>
-                <form class='answerForm' autocomplete="off" style="padding-top: 10px;">
-                    <p>Search for a species and click Submit</p>
-                    <p id='valMessage' style="display: none; color: red;">Invalid species</p>
-                    <div class="autocomplete" style="width:300px;">
-                        <input  id="userAnswer" type="text" name="userAnswer" placeholder="Birds"></input>
-                    </div>
-                    <input class="game-input-btn" type="submit"></input>
-                </form> 
-                <br>
-        </div>
-        <!--answer screen-->
-        <div class='answer-div' style="display: none;">
-            <h2 id='ans-result'></h2>
-            <p id='ans-summ'></p>
-            <input class="game-input-btn" id='nextBtn' type="submit" value='Next Bird Sound >>'></input>
-        </div>
-        <!--start screen-->
-        <div class='start-div' style="display: none;">
-            <h1 class="start-txt">Welcome to the Bird Sounds Game. </h1>
-            <div class="intro-text">
-            <p class="instr" style="text-align: justify;"><b>This game gets bird sounds from <a href='https://www.xeno-canto.org/' target="_blank">Xeno-Canto</a> and asks you to guess the bird. Only birds on The British List are used. Sounds for each species are picked at random. Levels are set based on the abundance of the bird in the UK rather than how often the sound is heard. The are 5 levels. The higher the level the greater the points. Enjoy!</b></p>
-            <h2>Click start to begin.</h2>
-            </div>  
-            <h1 class='next-level-txt' style="display: none;"></h1>
-            <input class="game-input-btn" id='startBtn' type="submit" value='Start'></input>
-            <p class="disc" style="font-size: small; text-align: justify;"><i>Disclaimer: I built this game for educational purposes and a bit of fun. I make no commercial gain. After each question a link to the original record on Xeno-Canto is provided where you will find the name of the recordist and furher details about the recording. I code for a bit of fun. The source code for this project can be found <a href="https://github.com/vulaplay/birdSoundsGame" target="_blank">here</a>. Please feel free to use, adapt, or improve it.</i></p>
-        </div>
-        <!--loading screen-->
-        <div class='load-div' style="display: none;">
-                <h1>Getting sounds...</h1>
-                <div class="loader"></div>
-        </div>
-        <!--game over screen-->
-        <div class='gameover-div' style="display: none;"> 
-            <h1 class='gameover-msg'></h1>
-            <input class="game-input-btn" id='gameOverBtn' type="submit" value='Restart Game'></input>    
-        </div>             
-    </div>
-</div>
+    </main>
 	<script src='https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js'/></script>
     <script src='./Gamebirddata.js'></script>
     <script src=''></script>
@@ -439,7 +459,17 @@ p {
                     otherBirdsTxt = `. Background birds: ${getAlsoBirds(currentSoundObj)}`
                     //$(`<p class='otherBirdsp'><b>Background birds: ${getAlsoBirds(currentSoundObj)}</b></P>`).insertAfter($audTag);
                 };
-                $(`<p class='otherBirdsp'><b>Country: ${currentSoundObj.cnt}${otherBirdsTxt}</P>`).insertAfter($soundNum);
+                let date = new Date(currentSoundObj.date);
+                let year = date.getFullYear();
+                let month = date.getMonth()+1;
+                let day = date.getDate(); 
+                if (day < 10) {
+                    day = '0' + day;
+                };
+                if (month < 10) {
+                    month = '0' + month;
+                };
+                $(`<p class='otherBirdsp'><b>Country: ${currentSoundObj.cnt}. Date: ${day}-${month}-${year}${otherBirdsTxt}</P>`).insertAfter($soundNum);
                 
             };
             
