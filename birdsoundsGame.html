@@ -211,6 +211,8 @@ h1, h2, h3, h4, h5, h6 {
             - when also birds not in birdlist
             - handle not sounds available returning for the bird
             - try to use UK, if not use euro then world
+            - rewrite to play sounds from any level
+            
             */
                      
             let $titleDiv = $('.title-div');
@@ -454,7 +456,7 @@ h1, h2, h3, h4, h5, h6 {
                 document.getElementById("aud").load();
                 //console.log(currentSoundObj);
                 //console.log(currentSoundObj.also);
-                otherBirdsTxt = ''
+                otherBirdsTxt = '';
                 if (!currentSoundObj.also[0] == ""){
                     otherBirdsTxt = `. Background birds: ${getAlsoBirds(currentSoundObj)}`
                     //$(`<p class='otherBirdsp'><b>Background birds: ${getAlsoBirds(currentSoundObj)}</b></P>`).insertAfter($audTag);
@@ -462,7 +464,7 @@ h1, h2, h3, h4, h5, h6 {
                 let date = new Date(currentSoundObj.date);
                 let year = date.getFullYear();
                 let month = date.getMonth()+1;
-                let day = date.getDate(); 
+                let day = date.getDate();
                 if (day < 10) {
                     day = '0' + day;
                 };
@@ -537,7 +539,7 @@ h1, h2, h3, h4, h5, h6 {
                 a: 1,
                 b: 2,
                 sounds: [{cnt: 'United Kingdom'},{cnt: 'United Kingdom'},{cnt: 'bla'}]
-            }
+            };
             
             const filterCnt = (birdObj) => {
                 let cntCount = 0;
@@ -545,7 +547,7 @@ h1, h2, h3, h4, h5, h6 {
                 if (bsounds.cnt === 'United Kingdom'){
                     cntCount++;
                 };
-                })
+                });
                 return cntCount;
             }
             console.log(filterCnt(testObj));
